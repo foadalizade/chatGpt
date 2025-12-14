@@ -1,0 +1,23 @@
+{
+    "logo_path": "C:/Users/f.alizadeh/OneDrive/Desktop/1/logo.png",
+    "last_excel_path": "D:/JTK-Files/قالب سازی/1404/قالبسازی.xlsx",
+    "last_sheet": "آذر",
+    "window_size": "1600x809+-7+0",
+    "filters": {
+        "start_date": "1404/09/08",
+        "end_date": "1404/09/13",
+        "repair_type": "قالب تعمیری",
+        "part_type": "شمش پراید"
+    },
+    "colors": {
+        "bg_main": "#FFA500",
+        "frame_bg": "#FFE5B4",
+        "button_bg": "#FF8C00",
+        "button_fg": "#FFFFFF",
+        "tree_bg": "#FFFFFF",
+        "tree_alt_bg": "#FFF5E0",
+        "tree_font_color": "#000000",
+        "tree_total_bg": "#0000FF",
+        "tree_total_fg": "#FFFFFF"
+    }
+}
