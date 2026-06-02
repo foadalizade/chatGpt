@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سیستم مدیریت قالب‌سازی</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Tahoma,Arial,sans-serif;background:#0f1117;color:#e0e0e0;min-height:100vh}
+.nav{background:#1a1d2e;border-bottom:2px solid #2d3561;display:flex;align-items:center;padding:0 10px;height:52px;gap:5px;flex-wrap:wrap}
+.nav-title{font-size:14px;font-weight:bold;color:#7c83d4;margin-left:auto;white-space:nowrap}
+.nav-btn{background:#2d3561;border:none;color:#e0e0e0;padding:5px 11px;border-radius:6px;cursor:pointer;font-family:Tahoma;font-size:12px;transition:background .2s}
+.nav-btn:hover{background:#3d4881}.nav-btn.active{background:#5c6bc0;color:#fff}
+.save-ind{font-size:10px;color:#4caf50;padding:3px 7px;background:#14532d33;border-radius:4px;display:none}
+.tab-content{display:none;padding:14px}.tab-content.active{display:block}
+.card{background:#1a1d2e;border:1px solid #2d3561;border-radius:10px;padding:13px;margin-bottom:13px}
+.card-title{font-size:13px;font-weight:bold;color:#7c83d4;margin-bottom:10px;border-bottom:1px solid #2d3561;padding-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+.form-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:7px}
+.form-group{display:flex;flex-direction:column;gap:3px;flex:1;min-width:120px}
+label{font-size:11px;color:#aaa}
+input,select,textarea{background:#0f1117;border:1px solid #2d3561;color:#e0e0e0;padding:6px 8px;border-radius:6px;font-family:Tahoma;font-size:12px;outline:none}
+input:focus,select:focus{border-color:#5c6bc0}
+textarea{resize:vertical;min-height:50px}
+.btn{padding:6px 13px;border:none;border-radius:6px;cursor:pointer;font-family:Tahoma;font-size:12px;font-weight:bold;transition:all .2s}
+.btn-primary{background:#5c6bc0;color:#fff}.btn-primary:hover{background:#7986cb}
+.btn-success{background:#2e7d32;color:#fff}.btn-success:hover{background:#388e3c}
+.btn-danger{background:#c62828;color:#fff;font-size:11px;padding:3px 8px}.btn-danger:hover{background:#e53935}
+.btn-edit{background:#1565c0;color:#fff;font-size:11px;padding:3px 8px}.btn-edit:hover{background:#1976d2}
+.btn-export{background:#00695c;color:#fff}.btn-export:hover{background:#00897b}
+.btn-import{background:#4527a0;color:#fff}.btn-import:hover{background:#512da8}
+.btn-excel{background:#1e6f3f;color:#fff}.btn-excel:hover{background:#2e8b57}
+.btn-sm{font-size:11px;padding:4px 9px}.btn-xs{font-size:10px;padding:2px 7px}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:bold}
+.badge-high{background:#7f1d1d;color:#fca5a5}.badge-mid{background:#78350f;color:#fcd34d}
+.badge-low{background:#1e3a5f;color:#93c5fd}.badge-pending{background:#374151;color:#9ca3af}
+.badge-inprog{background:#1e3a5f;color:#60a5fa}.badge-done{background:#14532d;color:#86efac}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#1e2235;color:#7c83d4;padding:7px 6px;text-align:right;font-weight:bold;border-bottom:2px solid #2d3561}
+td{padding:6px 6px;border-bottom:1px solid #1e2235;vertical-align:middle}
+tr:hover td{background:#1e2235}
+.gantt-wrap{overflow-x:auto}
+.gantt-bar{height:19px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:bold;white-space:nowrap;overflow:hidden;padding:0 3px;cursor:pointer}
+.gantt-header-cell{background:#1e2235;padding:4px 2px;text-align:center;font-size:10px;color:#7c83d4;border:1px solid #2d3561;min-width:32px}
+.gantt-row-label{background:#1a1d2e;padding:5px 7px;font-size:11px;white-space:nowrap;border:1px solid #2d3561;min-width:150px}
+.gantt-cell{border:1px solid #1e2235;padding:1px;vertical-align:middle}
+#bpmn-canvas{width:100%;min-height:360px;background:#0f1117;border-radius:10px;border:1px solid #2d3561;overflow:auto}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#1a1d2e;border:1px solid #2d3561;border-radius:12px;padding:18px;min-width:300px;max-width:92vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:14px;font-weight:bold;color:#7c83d4;margin-bottom:13px}
+.op-item{background:#0f1117;border:1px solid #2d3561;border-radius:7px;padding:6px 9px;margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.project-card{background:#1a1d2e;border:1px solid #2d3561;border-radius:7px;padding:9px;margin-bottom:6px;cursor:grab;transition:border-color .2s}
+.project-card:hover{border-color:#5c6bc0}.project-card.dragging{opacity:.4}
+.drop-zone{border:2px dashed #2d3561;border-radius:10px;padding:16px;text-align:center;color:#4b5563;font-size:12px;transition:all .2s;min-height:65px}
+.drop-zone.over{border-color:#5c6bc0;background:#1a1d2e;color:#7c83d4}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+@media(max-width:660px){.grid2{grid-template-columns:1fr}}
+.summary-box{background:#0f1117;border:1px solid #2d3561;border-radius:8px;padding:9px 12px;text-align:center}
+.summary-num{font-size:24px;font-weight:bold;color:#5c6bc0}
+.summary-lbl{font-size:10px;color:#9ca3af;margin-top:2px}
+.flex-end{display:flex;justify-content:flex-end;gap:7px;margin-top:9px}
+.mt8{margin-top:8px}
+select option{background:#1a1d2e}
+.toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:11px;padding:9px;background:#1a1d2e;border-radius:8px;border:1px solid #2d3561}
+.toolbar-label{font-size:11px;color:#9ca3af}
+.st-block{background:#0f1117;border:1px solid #2d3561;border-radius:8px;margin-bottom:8px;overflow:hidden}
+.st-header{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;user-select:none}
+.st-header:hover{background:#1a1d2e}
+.st-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.st-name{font-size:13px;font-weight:bold;flex:1}
+.st-meta{font-size:10px;color:#9ca3af}
+.st-chevron{font-size:11px;color:#7c83d4;transition:transform .2s}
+.st-chevron.open{transform:rotate(90deg)}
+.st-body{display:none;padding:0 12px 10px;border-top:1px solid #1e2235}
+.st-body.open{display:block}
+.add-device-form{background:#1a1d2e;border-radius:7px;padding:9px;margin-top:8px;border:1px dashed #2d3561}
+.info-badge{background:#1e3a5f;color:#93c5fd;padding:2px 8px;border-radius:12px;font-size:10px}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showTab('dashboard',this)">📊 داشبورد</button>
+  <button class="nav-btn" onclick="showTab('projects',this)">📁 پروژه‌ها</button>
+  <button class="nav-btn" onclick="showTab('schedule',this)">📅 برنامه‌ریزی</button>
+  <button class="nav-btn" onclick="showTab('gantt',this)">📈 گانت</button>
+  <button class="nav-btn" onclick="showTab('bpmn',this)">🔵 BPMN</button>
+  <button class="nav-btn" onclick="showTab('stations',this)">⚙️ ایستگاه‌ها</button>
+  <span id="save-ind" class="save-ind">✅ ذخیره شد</span>
+  <span class="nav-title">🏭 قالب‌سازی</span>
+</div>
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard" class="tab-content active">
+  <div class="toolbar">
+    <span class="toolbar-label">💾 داده‌ها:</span>
+    <button class="btn btn-excel" onclick="document.getElementById('excel-file').click()">📎 Import Excel</button>
+    <input type="file" id="excel-file" accept=".xlsx,.xls" style="display:none" onchange="importFromExcel(event)">
+    <button class="btn btn-excel btn-sm" onclick="exportToExcel()">📊 Export Excel</button>
+    <button class="btn btn-export" onclick="exportData()">⬇️ Export JSON</button>
+    <button class="btn btn-import" onclick="document.getElementById('import-file').click()">⬆️ Import JSON</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 پاک کردن</button>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 خلاصه وضعیت</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:9px" id="summary-boxes"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">💰 خلاصه هزینه‌ها</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px" id="cost-summary"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🔔 عملیات اولویت بالا در انتظار</div>
+    <div id="priority-ops"></div>
+  </div>
+</div>
+
+<!-- PROJECTS -->
+<div id="tab-projects" class="tab-content">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">➕ پروژه جدید</div>
+      <div class="form-row">
+        <div class="form-group"><label>نام پروژه / قطعه / دستگاه</label><input id="p-name" type="text" placeholder="مثال: قالب ولوو سوپر"></div>
+        <div class="form-group"><label>نوع</label>
+          <select id="p-type">
+            <option>قالب تعمیری</option><option>قطعه تعمیری</option>
+            <option>قالب نو</option><option>قطعه نو</option>
+            <option>دستگاه تعمیری</option><option>دستگاه نو</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>کد قالب / قطعه</label><input id="p-code" type="text" placeholder="مثال: MH19562-01P"></div>
+        <div class="form-group"><label>مشتری</label>
+          <select id="p-customer"><option>داخلی</option><option>خارجی</option><option>امینی</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>اولویت</label>
+          <select id="p-priority"><option value="high">🔴 بالا</option><option value="mid" selected>🟡 متوسط</option><option value="low">🔵 پایین</option></select>
+        </div>
+        <div class="form-group"><label>تاریخ تحویل</label><input id="p-deadline" type="date"></div>
+      </div>
+      <div class="form-row"><div class="form-group"><label>توضیحات</label><textarea id="p-desc"></textarea></div></div>
+      <button class="btn btn-primary" onclick="addProject()">➕ افزودن پروژه</button>
+    </div>
+    <div class="card">
+      <div class="card-title">🗂️ لیست پروژه‌ها <span id="proj-count" style="color:#9ca3af;font-size:10px;font-weight:normal"></span></div>
+      <div id="projects-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE -->
+<div id="tab-schedule" class="tab-content">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">📥 درگ پروژه</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:5px">پروژه‌های آماده:</div>
+      <div id="drag-projects"></div>
+      <div class="drop-zone mt8" id="drop-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave()" ondrop="onDrop(event)">📂 پروژه را اینجا درگ کنید</div>
+      <div id="selected-project-info" style="display:none" class="mt8"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">⚙️ تعریف عملیات</div>
+      <div id="ops-form" style="display:none">
+        <div id="ops-list-form"></div>
+        <div style="background:#0f1117;border:1px solid #2d3561;border-radius:7px;padding:9px;margin-top:7px">
+          <div style="font-size:11px;color:#7c83d4;margin-bottom:6px">➕ عملیات جدید</div>
+          <div class="form-row">
+            <div class="form-group"><label>ایستگاه</label><select id="op-station" onchange="updateDeviceSelect()"></select></div>
+            <div class="form-group"><label>دستگاه</label><select id="op-device"></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>مدت (ساعت)</label><input id="op-duration" type="number" min="0.5" step="0.5" value="1"></div>
+            <div class="form-group"><label>اولویت</label>
+              <select id="op-priority"><option value="high">🔴 بالا</option><option value="mid" selected>🟡 متوسط</option><option value="low">🔵 پایین</option></select>
+            </div>
+          </div>
+          <div class="form-row"><div class="form-group"><label>نام عملیات</label><input id="op-name" type="text" placeholder="مثال: وایر سنبه"></div></div>
+          <button class="btn btn-success mt8" onclick="addOperation()">✔ افزودن</button>
+        </div>
+        <div class="flex-end"><button class="btn btn-primary" onclick="scheduleProject()">📅 زمان‌بندی و ثبت</button></div>
+      </div>
+      <div id="ops-empty" style="color:#4b5563;font-size:12px">ابتدا یک پروژه انتخاب کنید</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 لیست کامل عملیات</div>
+    <div style="overflow-x:auto">
+      <table><thead><tr><th>#</th><th>پروژه</th><th>عملیات</th><th>ایستگاه</th><th>دستگاه</th><th>شروع</th><th>پایان</th><th>مدت</th><th>اولویت</th><th>وضعیت</th><th>تعمیرکار</th><th>هزینه</th><th>نتیجه</th><th>عملیات</th></tr></thead>
+      <tbody id="ops-table"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- GANTT -->
+<div id="tab-gantt" class="tab-content">
+  <div class="card">
+    <div class="card-title">📈 گانت چارت — به تفکیک دستگاه
+      <div style="display:flex;gap:6px;align-items:center">
+        <label style="font-size:11px;font-weight:normal">نمایش:</label>
+        <select id="gantt-mode" onchange="renderGantt()" style="font-size:11px;padding:3px 6px">
+          <option value="hour">ساعتی</option>
+          <option value="day">روزانه</option>
+        </select>
+      </div>
+    </div>
+    <div class="gantt-wrap" id="gantt-container"></div>
+  </div>
+</div>
+
+<!-- BPMN -->
+<div id="tab-bpmn" class="tab-content">
+  <div class="card">
+    <div class="card-title">🔵 نمای فرایند BPMN</div>
+    <div style="margin-bottom:9px;display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+      <label style="font-size:11px">پروژه:</label>
+      <select id="bpmn-project-select" onchange="renderBPMN()" style="min-width:150px"></select>
+    </div>
+    <div id="bpmn-canvas"></div>
+  </div>
+</div>
+
+<!-- STATIONS -->
+<div id="tab-stations" class="tab-content">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">➕ ایستگاه جدید</div>
+      <div class="form-row">
+        <div class="form-group"><label>نام ایستگاه</label><input id="st-name" type="text" placeholder="مثال: مونتاژ"></div>
+        <div class="form-group"><label>کد</label><input id="st-code" type="text" placeholder="مثال: MNT"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>رنگ</label><input id="st-color" type="color" value="#5c6bc0"></div>
+        <div class="form-group"><label>کلمات کلیدی Excel (با کاما)</label><input id="st-keywords" type="text" placeholder="مثال: مونتاژ,دمونتاژ"></div>
+      </div>
+      <button class="btn btn-primary" onclick="addStation()">➕ افزودن ایستگاه</button>
+    </div>
+    <div style="grid-column:1/-1">
+      <div class="card">
+        <div class="card-title">⚙️ ایستگاه‌ها و دستگاه‌ها <span class="info-badge">کلمات کلیدی برای Import Excel</span></div>
+        <div id="stations-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT OP MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ ویرایش عملیات</div>
+    <input type="hidden" id="edit-op-id">
+    <div class="form-row"><div class="form-group"><label>نام عملیات</label><input id="edit-op-name" type="text"></div></div>
+    <div class="form-row">
+      <div class="form-group"><label>ایستگاه</label><select id="edit-op-station" onchange="editUpdateDevice()"></select></div>
+      <div class="form-group"><label>دستگاه</label><select id="edit-op-device"></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>تعمیرکار</label><input id="edit-op-repairer" type="text" placeholder="مثال: صلواتی"></div>
+      <div class="form-group"><label>فی (تومان/ساعت)</label><input id="edit-op-rate" type="number" value="500000"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>مدت (ساعت)</label><input id="edit-op-duration" type="number" min="0.5" step="0.5"></div>
+      <div class="form-group"><label>اولویت</label>
+        <select id="edit-op-priority"><option value="high">🔴 بالا</option><option value="mid">🟡 متوسط</option><option value="low">🔵 پایین</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>نتیجه فرایند</label>
+        <select id="edit-op-result"><option value="">در انتظار</option><option value="OK">✅ OK</option><option value="NOK">❌ NOK</option></select>
+      </div>
+      <div class="form-group"><label>وضعیت</label>
+        <select id="edit-op-status"><option value="pending">در انتظار</option><option value="inprog">در حال انجام</option><option value="done">تکمیل‌شده</option></select>
+      </div>
+    </div>
+    <div class="flex-end">
+      <button class="btn btn-danger" onclick="closeModal()">لغو</button>
+      <button class="btn btn-primary" onclick="saveEdit()">💾 ذخیره</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT DEVICE MODAL -->
+<div class="modal-overlay" id="edit-device-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ ویرایش دستگاه</div>
+    <input type="hidden" id="edit-dev-sid"><input type="hidden" id="edit-dev-did">
+    <div class="form-row">
+      <div class="form-group"><label>کد دستگاه</label><input id="edit-dev-code" type="text"></div>
+      <div class="form-group"><label>نام دستگاه</label><input id="edit-dev-name" type="text"></div>
+    </div>
+    <div class="form-row"><div class="form-group"><label>ظرفیت روزانه (ساعت)</label><input id="edit-dev-cap" type="number" min="1" value="8"></div></div>
+    <div class="flex-end">
+      <button class="btn btn-danger" onclick="closeDeviceModal()">لغو</button>
+      <button class="btn btn-primary" onclick="saveDeviceEdit()">💾 ذخیره</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== HELPERS =====
+function esc(s){if(!s)return '';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+// ===== STATE =====
+const SK='mold_v5';
+let stations=[], projects=[], operations=[];
+let draggedPid=null, selPid=null, tempOps=[];
+let sidC=1, pidC=1, oidC=1, didC=1;
+const EXCEL_KW={};
+const WS=8, WE=17; // working hours start/end
+
+// ===== PERSIST =====
+function save(){
+  try{
+    localStorage.setItem(SK,JSON.stringify({stations,projects,operations,sidC,pidC,oidC,didC,kw:EXCEL_KW}));
+    const el=document.getElementById('save-ind');el.style.display='inline-block';setTimeout(()=>el.style.display='none',1400);
+  }catch(e){}
+}
+function load(){
+  try{
+    const r=localStorage.getItem(SK);if(!r)return false;
+    const d=JSON.parse(r);
+    stations=d.stations||[];projects=d.projects||[];operations=d.operations||[];
+    sidC=d.sidC||1;pidC=d.pidC||1;oidC=d.oidC||1;didC=d.didC||1;
+    if(d.kw)Object.assign(EXCEL_KW,d.kw);
+    return true;
+  }catch(e){return false;}
+}
+
+// ===== DATE/TIME UTILS =====
+function persianToDate(s){
+  if(!s||s.length<8)return new Date();
+  try{const p=s.split('/');if(p.length!==3)return new Date();const d=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));return d;}catch(e){return new Date();}
+}
+function addWorkHours(date,hours){
+  let r=new Date(date),rem=hours;
+  while(rem>0){
+    let h=r.getHours();
+    if(h>=WE){r.setDate(r.getDate()+1);r.setHours(WS,0,0,0);continue;}
+    if(h<WS){r.setHours(WS,0,0,0);continue;}
+    let avail=WE-h,add=Math.min(rem,avail);
+    r.setHours(h+add);rem-=add;
+  }
+  return r;
+}
+function getNextSlot(sid,did,dur,prefStart=null){
+  const ex=operations.filter(o=>o.stationId===sid&&o.deviceId===did).sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+  let s=prefStart?new Date(prefStart):new Date();
+  if(s.getHours()<WS)s.setHours(WS,0,0,0);
+  if(s.getHours()>=WE){s.setDate(s.getDate()+1);s.setHours(WS,0,0,0);}
+  for(const op of ex){
+    const os=new Date(op.startTime),oe=new Date(op.endTime);
+    const pe=addWorkHours(s,dur);
+    if(s<oe&&pe>os){s=new Date(oe);if(s.getHours()>=WE){s.setDate(s.getDate()+1);s.setHours(WS,0,0,0);}}
+  }
+  return{start:s,end:addWorkHours(s,dur)};
+}
+function fmtDT(d){const dt=new Date(d);return dt.toLocaleDateString('fa-IR')+' '+String(dt.getHours()).padStart(2,'0')+':00';}
+function fmtDate(d){return new Date(d).toLocaleDateString('fa-IR');}
+
+// ===== LOOKUPS =====
+const priL={high:'🔴 بالا',mid:'🟡 متوسط',low:'🔵 پایین'};
+const priC={high:'badge-high',mid:'badge-mid',low:'badge-low'};
+const statL={pending:'در انتظار',inprog:'در حال انجام',done:'تکمیل‌شده'};
+const statC={pending:'badge-pending',inprog:'badge-inprog',done:'badge-done'};
+const getSt=id=>stations.find(s=>s.id===id);
+const getPr=id=>projects.find(p=>p.id===id);
+const getDev=(sid,did)=>{const s=getSt(sid);return s?.devices?.find(d=>d.id===did);};
+
+// ===== TABS =====
+function showTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(name==='gantt')renderGantt();
+  if(name==='bpmn'){renderBPMNSelect();renderBPMN();}
+  if(name==='dashboard'){renderDashboard();renderCostSummary();}
+}
+
+// ===== EXCEL IMPORT =====
+function getStByKw(txt){
+  if(!txt)return null;
+  const lt=txt.toLowerCase();
+  for(const st of stations){
+    const kws=EXCEL_KW[st.id]||[];
+    if(kws.some(k=>lt.includes(k.toLowerCase())))return st.id;
+    if(lt.includes(st.name.toLowerCase()))return st.id;
+  }
+  return null;
+}
+function priByType(t){
+  if(!t)return 'mid';
+  if(t.includes('تعمیری'))return 'high';
+  if(t.includes('نو'))return 'low';
+  return 'mid';
+}
+async function importFromExcel(e){
+  const file=e.target.files[0];if(!file)return;
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf);
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  let newP=[],newO=[];const pMap=new Map();
+  for(let i=1;i<rows.length&&i<2000;i++){
+    const r=rows[i];if(!r||!r[1])continue;
+    const pName=r[1]?.toString().trim()||'';
+    const rType=r[2]?.toString().trim()||'قالب تعمیری';
+    const repairer=r[3]?.toString().trim()||'';
+    const customer=r[4]?.toString().trim()||'داخلی';
+    const subGroup=r[5]?.toString().trim()||'';
+    const moldCode=r[6]?.toString().trim()||'';
+    const desc=r[16]?.toString().trim()||'';
+    const stTxt=r[12]?.toString().trim()||'';
+    const devCode=r[13]?.toString().trim()||'';
+    const partName=r[14]?.toString().trim()||'';
+    const mins=parseFloat(r[28])||0;
+    const dateStr=r[26]?.toString().trim()||'';
+    const rate=parseFloat(r[42])||500000;
+    const result=r[17]?.toString().trim()||'';
+    const key=`${pName}_${moldCode}`;
+    let proj=pMap.get(key);
+    if(!proj){
+      proj={id:pidC++,name:pName,num:moldCode,type:rType,customer,subGroup,priority:priByType(rType),deadline:'',desc,scheduled:false,excelMeta:{repairer,customer,subGroup}};
+      pMap.set(key,proj);newP.push(proj);
+    }
+    const sid=getStByKw(stTxt)||(stations.length?stations[0].id:null);
+    const opName=(desc||`${stTxt} ${partName}`).trim().substring(0,50)||stTxt||'عملیات';
+    const baseDate=persianToDate(dateStr);
+    baseDate.setHours(WS,0,0,0);
+    const dur=mins/60||1;
+    const end=addWorkHours(baseDate,dur);
+    newO.push({id:oidC++,projectId:proj.id,stationId:sid,deviceId:null,name:opName,duration:dur,priority:priByType(rType),status:result==='OK'?'done':'pending',startTime:baseDate,endTime:end,excelMeta:{repairer,customer,rate,result,deviceCode:devCode,partName,minutesWorked:mins,dateStr,originalStation:stTxt}});
+  }
+  projects.push(...newP);operations.push(...newO);
+  renderAll();save();
+  alert(`✅ Import موفق!\n📁 ${newP.length} پروژه | ⚙️ ${newO.length} عملیات`);
+  e.target.value='';
+}
+
+// ===== EXCEL EXPORT =====
+function exportToExcel(){
+  const hdr=['ردیف','قالب/قطعه','نوع','تعمیرکار','مشتری','زیرگروه','کد قالب','شرح عملیات','ایستگاه','دستگاه','تاریخ','مدت(دقیقه)','وضعیت','نتیجه','فی(تومان)','هزینه کل'];
+  const rows=[hdr,...operations.map((op,i)=>{
+    const p=getPr(op.projectId),st=getSt(op.stationId),dev=getDev(op.stationId,op.deviceId);
+    const mins=Math.round(op.duration*60);
+    const cost=mins/60*(op.excelMeta?.rate||500000);
+    return[i+1,p?.name||'',p?.type||'',op.excelMeta?.repairer||'',op.excelMeta?.customer||'داخلی',p?.subGroup||'',p?.num||'',op.name,st?.name||'',dev?dev.code:(op.excelMeta?.deviceCode||''),op.excelMeta?.dateStr||fmtDate(op.startTime),mins,statL[op.status],op.excelMeta?.result||'',op.excelMeta?.rate||500000,cost];
+  })];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'عملیات');
+  XLSX.writeFile(wb,'mold_export_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ===== STATIONS =====
+function addStation(){
+  const name=document.getElementById('st-name').value.trim();
+  const code=document.getElementById('st-code').value.trim();
+  const color=document.getElementById('st-color').value;
+  const kw=document.getElementById('st-keywords').value.trim();
+  if(!name){alert('نام ایستگاه را وارد کنید');return;}
+  const id=sidC++;
+  stations.push({id,name,code,color,devices:[]});
+  if(kw)EXCEL_KW[id]=kw.split(',').map(k=>k.trim()).filter(Boolean);
+  document.getElementById('st-name').value='';
+  document.getElementById('st-code').value='';
+  document.getElementById('st-keywords').value='';
+  renderStations();populateStSelects();save();
+}
+function deleteStation(id){
+  if(!confirm('ایستگاه حذف شود؟'))return;
+  stations=stations.filter(s=>s.id!==id);delete EXCEL_KW[id];
+  renderStations();populateStSelects();save();
+}
+function toggleStation(id){
+  document.getElementById('stbody-'+id).classList.toggle('open');
+  document.getElementById('stchev-'+id).classList.toggle('open');
+}
+function addDevice(sid){
+  const code=document.getElementById('dcode-'+sid).value.trim();
+  const name=document.getElementById('dname-'+sid).value.trim();
+  const cap=parseFloat(document.getElementById('dcap-'+sid).value)||8;
+  if(!code){alert('کد دستگاه را وارد کنید');return;}
+  const st=getSt(sid);if(!st)return;
+  st.devices.push({id:didC++,code,name,capacity:cap});
+  document.getElementById('dcode-'+sid).value='';
+  document.getElementById('dname-'+sid).value='';
+  renderStations();populateStSelects();save();
+}
+function deleteDevice(sid,did){
+  if(!confirm('دستگاه حذف شود؟'))return;
+  const st=getSt(sid);if(!st)return;
+  st.devices=st.devices.filter(d=>d.id!==did);
+  renderStations();populateStSelects();save();
+}
+function openDeviceEdit(sid,did){
+  const dev=getDev(sid,did);if(!dev)return;
+  document.getElementById('edit-dev-sid').value=sid;
+  document.getElementById('edit-dev-did').value=did;
+  document.getElementById('edit-dev-code').value=dev.code;
+  document.getElementById('edit-dev-name').value=dev.name;
+  document.getElementById('edit-dev-cap').value=dev.capacity;
+  document.getElementById('edit-device-modal').classList.add('open');
+}
+function closeDeviceModal(){document.getElementById('edit-device-modal').classList.remove('open');}
+function saveDeviceEdit(){
+  const sid=parseInt(document.getElementById('edit-dev-sid').value);
+  const did=parseInt(document.getElementById('edit-dev-did').value);
+  const dev=getDev(sid,did);if(!dev)return;
+  dev.code=document.getElementById('edit-dev-code').value.trim()||dev.code;
+  dev.name=document.getElementById('edit-dev-name').value.trim();
+  dev.capacity=parseFloat(document.getElementById('edit-dev-cap').value)||dev.capacity;
+  closeDeviceModal();renderStations();populateStSelects();save();
+}
+function renderStations(){
+  const el=document.getElementById('stations-list');
+  if(!stations.length){el.innerHTML='<div style="color:#4b5563;font-size:12px">ایستگاهی تعریف نشده</div>';return;}
+  el.innerHTML=stations.map(st=>{
+    const kws=(EXCEL_KW[st.id]||[]).join(', ');
+    return `<div class="st-block">
+      <div class="st-header" onclick="toggleStation(${st.id})">
+        <span class="st-dot" style="background:${st.color}"></span>
+        <span class="st-name">${esc(st.name)}</span>
+        <span class="st-meta">${esc(st.code)} | ${st.devices.length} دستگاه${kws?' | 🔑 '+esc(kws):''}</span>
+        <button class="btn btn-danger btn-xs" onclick="event.stopPropagation();deleteStation(${st.id})">حذف</button>
+        <span class="st-chevron" id="stchev-${st.id}">▶</span>
+      </div>
+      <div class="st-body" id="stbody-${st.id}">
+        ${st.devices.length?`<table><thead><tr><th>کد</th><th>نام</th><th>ظرفیت</th><th></th></tr></thead><tbody>
+          ${st.devices.map(d=>`<tr>
+            <td><span style="color:#7c83d4;font-weight:bold">${esc(d.code)}</span></td>
+            <td>${esc(d.name||'-')}</td><td>${d.capacity}h</td>
+            <td><button class="btn btn-edit btn-xs" onclick="openDeviceEdit(${st.id},${d.id})">✏️</button>
+            <button class="btn btn-danger btn-xs" onclick="deleteDevice(${st.id},${d.id})">🗑</button></td>
+          </tr>`).join('')}</tbody></table>`:'<div style="font-size:11px;color:#4b5563;margin-top:8px">دستگاهی ثبت نشده</div>'}
+        <div class="add-device-form">
+          <div style="font-size:11px;color:#7c83d4;margin-bottom:6px">➕ افزودن دستگاه به ${esc(st.name)}</div>
+          <div class="form-row">
+            <div class="form-group"><label>کد</label><input id="dcode-${st.id}" type="text" placeholder="مثال: CNC-001"></div>
+            <div class="form-group"><label>نام</label><input id="dname-${st.id}" type="text" placeholder="مثال: فرز ماکینو"></div>
+            <div class="form-group"><label>ظرفیت (h)</label><input id="dcap-${st.id}" type="number" value="8" min="1"></div>
+          </div>
+          <button class="btn btn-success btn-sm" onclick="addDevice(${st.id})">➕ افزودن دستگاه</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function populateStSelects(){
+  const opts=stations.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  const a=document.getElementById('op-station');if(a){a.innerHTML=opts;updateDeviceSelect();}
+  const b=document.getElementById('edit-op-station');if(b)b.innerHTML=opts;
+}
+function updateDeviceSelect(){
+  const sid=parseInt(document.getElementById('op-station').value);
+  const st=getSt(sid);const sel=document.getElementById('op-device');
+  if(!st||!st.devices.length){sel.innerHTML='<option value="">-- بدون دستگاه --</option>';return;}
+  sel.innerHTML=st.devices.map(d=>`<option value="${d.id}">${esc(d.code)}${d.name?' — '+esc(d.name):''}</option>`).join('');
+}
+function editUpdateDevice(){
+  const sid=parseInt(document.getElementById('edit-op-station').value);
+  const st=getSt(sid);const sel=document.getElementById('edit-op-device');
+  if(!st||!st.devices.length){sel.innerHTML='<option value="">-- بدون دستگاه --</option>';return;}
+  sel.innerHTML=st.devices.map(d=>`<option value="${d.id}">${esc(d.code)}${d.name?' — '+esc(d.name):''}</option>`).join('');
+}
+
+// ===== PROJECTS =====
+function addProject(){
+  const name=document.getElementById('p-name').value.trim();
+  const type=document.getElementById('p-type').value;
+  const code=document.getElementById('p-code').value.trim();
+  const customer=document.getElementById('p-customer').value;
+  const priority=document.getElementById('p-priority').value;
+  const deadline=document.getElementById('p-deadline').value;
+  const desc=document.getElementById('p-desc').value.trim();
+  if(!name){alert('نام پروژه را وارد کنید');return;}
+  projects.push({id:pidC++,name,num:code,type,customer,priority,deadline,desc,scheduled:false,excelMeta:{}});
+  document.getElementById('p-name').value='';document.getElementById('p-code').value='';document.getElementById('p-desc').value='';
+  renderProjects();renderDragProjects();save();
+}
+function deleteProject(id){
+  if(!confirm('پروژه و عملیات آن حذف شوند؟'))return;
+  projects=projects.filter(p=>p.id!==id);operations=operations.filter(o=>o.projectId!==id);
+  renderProjects();renderDragProjects();renderOpsTable();save();
+}
+function renderProjects(){
+  const el=document.getElementById('projects-list');
+  document.getElementById('proj-count').textContent=`(${projects.length})`;
+  if(!projects.length){el.innerHTML='<div style="color:#4b5563;font-size:12px">پروژه‌ای ثبت نشده</div>';return;}
+  el.innerHTML=projects.map(p=>`<div style="display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid #1e2235;flex-wrap:wrap">
+    <span style="flex:1;font-size:12px;font-weight:bold">${esc(p.name)}</span>
+    <span style="font-size:10px;color:#9ca3af">${esc(p.num||'')}</span>
+    <span class="badge ${priC[p.priority]}">${priL[p.priority]}</span>
+    <span class="badge badge-mid" style="font-size:9px">${esc(p.type||'')}</span>
+    ${p.scheduled?'<span class="badge badge-done">برنامه‌ریزی‌شده</span>':''}
+    <button class="btn btn-danger btn-xs" onclick="deleteProject(${p.id})">حذف</button>
+  </div>`).join('');
+}
+
+// ===== DRAG =====
+function renderDragProjects(){
+  const el=document.getElementById('drag-projects');
+  const un=projects.filter(p=>!p.scheduled);
+  if(!un.length){el.innerHTML='<div style="color:#4b5563;font-size:12px">همه برنامه‌ریزی شده‌اند</div>';return;}
+  el.innerHTML=un.map(p=>`<div class="project-card" draggable="true" ondragstart="onDragStart(event,${p.id})" ondragend="onDragEnd(event)">
+    <div style="font-weight:bold;font-size:12px">${esc(p.name)}</div>
+    <div style="font-size:10px;color:#9ca3af;margin-top:2px">${esc(p.num||'')} | <span class="badge ${priC[p.priority]}">${priL[p.priority]}</span></div>
+  </div>`).join('');
+}
+function onDragStart(e,id){draggedPid=id;e.target.classList.add('dragging');}
+function onDragEnd(e){e.target.classList.remove('dragging');}
+function onDragOver(e){e.preventDefault();document.getElementById('drop-zone').classList.add('over');}
+function onDragLeave(){document.getElementById('drop-zone').classList.remove('over');}
+function onDrop(e){e.preventDefault();document.getElementById('drop-zone').classList.remove('over');if(!draggedPid)return;selectForSchedule(draggedPid);draggedPid=null;}
+function selectForSchedule(id){
+  selPid=id;tempOps=[];
+  const p=getPr(id);
+  const info=document.getElementById('selected-project-info');
+  info.style.display='block';
+  info.innerHTML=`<div class="card" style="margin:0;padding:8px"><div style="font-weight:bold;font-size:12px">✅ ${esc(p.name)}</div><div style="font-size:10px;color:#9ca3af">${esc(p.num||'')} | ${priL[p.priority]}</div></div>`;
+  document.getElementById('ops-form').style.display='block';
+  document.getElementById('ops-empty').style.display='none';
+  renderTempOps();
+}
+function renderTempOps(){
+  const el=document.getElementById('ops-list-form');
+  if(!tempOps.length){el.innerHTML='<div style="color:#4b5563;font-size:11px;margin-bottom:6px">عملیاتی اضافه نشده</div>';return;}
+  el.innerHTML=tempOps.map((op,i)=>{
+    const st=getSt(op.stationId),dev=getDev(op.stationId,op.deviceId);
+    return `<div class="op-item">
+      <span style="flex:1;font-size:12px;font-weight:bold">${esc(op.name)}</span>
+      <span style="font-size:10px;color:#9ca3af">${st?esc(st.name):''} | ${dev?esc(dev.code):'-'} | ${op.duration}h</span>
+      <span class="badge ${priC[op.priority]}">${priL[op.priority]}</span>
+      <button class="btn btn-danger btn-xs" onclick="removeTempOp(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+function removeTempOp(i){tempOps.splice(i,1);renderTempOps();}
+function addOperation(){
+  const sid=parseInt(document.getElementById('op-station').value);
+  const did=parseInt(document.getElementById('op-device').value)||null;
+  const dur=parseFloat(document.getElementById('op-duration').value)||1;
+  const name=document.getElementById('op-name').value.trim()||getSt(sid)?.name||'عملیات';
+  const priority=document.getElementById('op-priority').value;
+  if(!sid){alert('ایستگاه را انتخاب کنید');return;}
+  tempOps.push({stationId:sid,deviceId:did,duration:dur,name,priority});
+  document.getElementById('op-name').value='';
+  renderTempOps();
+}
+function scheduleProject(){
+  if(!selPid){alert('پروژه‌ای انتخاب نشده');return;}
+  if(!tempOps.length){alert('حداقل یک عملیات تعریف کنید');return;}
+  const po={high:0,mid:1,low:2};
+  tempOps.sort((a,b)=>po[a.priority]-po[b.priority]);
+  for(const op of tempOps){
+    const slot=getNextSlot(op.stationId,op.deviceId,op.duration);
+    operations.push({id:oidC++,projectId:selPid,stationId:op.stationId,deviceId:op.deviceId,name:op.name,duration:op.duration,priority:op.priority,status:'pending',startTime:slot.start,endTime:slot.end,excelMeta:{repairer:'',rate:500000,result:''}});
+  }
+  getPr(selPid).scheduled=true;
+  selPid=null;tempOps=[];
+  document.getElementById('ops-form').style.display='none';
+  document.getElementById('ops-empty').style.display='block';
+  document.getElementById('selected-project-info').style.display='none';
+  renderProjects();renderDragProjects();renderOpsTable();save();
+  alert('✅ برنامه ثبت شد!');
+}
+
+// ===== OPS TABLE =====
+function renderOpsTable(){
+  const tb=document.getElementById('ops-table');
+  if(!operations.length){tb.innerHTML='<tr><td colspan="14" style="text-align:center;padding:14px;color:#4b5563">عملیاتی ثبت نشده</td></tr>';return;}
+  const sorted=[...operations].sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+  tb.innerHTML=sorted.map((op,i)=>{
+    const p=getPr(op.projectId),st=getSt(op.stationId),dev=getDev(op.stationId,op.deviceId);
+    const cost=op.duration*(op.excelMeta?.rate||500000);
+    const res=op.excelMeta?.result||'';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${p?esc(p.name):'-'}</td>
+      <td>${esc(op.name)}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${st?.color||'#555'};display:inline-block"></span>${st?esc(st.name):'-'}</span></td>
+      <td style="color:#7c83d4;font-weight:bold">${dev?esc(dev.code):(op.excelMeta?.deviceCode||'-')}</td>
+      <td style="font-size:10px">${fmtDT(op.startTime)}</td>
+      <td style="font-size:10px">${fmtDT(op.endTime)}</td>
+      <td>${op.duration}h</td>
+      <td><span class="badge ${priC[op.priority]}">${priL[op.priority]}</span></td>
+      <td><select onchange="changeStatus(${op.id},this.value)" style="font-size:10px;padding:2px 4px">
+        <option value="pending" ${op.status==='pending'?'selected':''}>در انتظار</option>
+        <option value="inprog" ${op.status==='inprog'?'selected':''}>در حال انجام</option>
+        <option value="done" ${op.status==='done'?'selected':''}>تکمیل</option>
+      </select></td>
+      <td>${esc(op.excelMeta?.repairer||'-')}</td>
+      <td style="font-size:10px">${cost.toLocaleString()}</td>
+      <td>${res==='OK'?'<span style="color:#86efac">✅ OK</span>':res==='NOK'?'<span style="color:#fca5a5">❌ NOK</span>':'-'}</td>
+      <td style="display:flex;gap:3px">
+        <button class="btn btn-edit btn-xs" onclick="openEdit(${op.id})">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteOp(${op.id})">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function changeStatus(id,s){const op=operations.find(o=>o.id===id);if(op){op.status=s;save();}}
+function deleteOp(id){if(!confirm('حذف شود؟'))return;operations=operations.filter(o=>o.id!==id);renderOpsTable();save();}
+function openEdit(id){
+  const op=operations.find(o=>o.id===id);if(!op)return;
+  document.getElementById('edit-op-id').value=id;
+  document.getElementById('edit-op-name').value=op.name;
+  document.getElementById('edit-op-duration').value=op.duration;
+  document.getElementById('edit-op-priority').value=op.priority;
+  document.getElementById('edit-op-status').value=op.status;
+  document.getElementById('edit-op-repairer').value=op.excelMeta?.repairer||'';
+  document.getElementById('edit-op-rate').value=op.excelMeta?.rate||500000;
+  document.getElementById('edit-op-result').value=op.excelMeta?.result||'';
+  document.getElementById('edit-op-station').innerHTML=stations.map(s=>`<option value="${s.id}" ${s.id===op.stationId?'selected':''}>${esc(s.name)}</option>`).join('');
+  editUpdateDevice();
+  setTimeout(()=>{
+    const sel=document.getElementById('edit-op-device');
+    Array.from(sel.options).forEach(o=>{if(parseInt(o.value)===op.deviceId)o.selected=true;});
+  },50);
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeModal(){document.getElementById('edit-modal').classList.remove('open');}
+function saveEdit(){
+  const id=parseInt(document.getElementById('edit-op-id').value);
+  const op=operations.find(o=>o.id===id);if(!op)return;
+  op.name=document.getElementById('edit-op-name').value.trim()||op.name;
+  op.duration=parseFloat(document.getElementById('edit-op-duration').value)||op.duration;
+  op.priority=document.getElementById('edit-op-priority').value;
+  op.status=document.getElementById('edit-op-status').value;
+  if(!op.excelMeta)op.excelMeta={};
+  op.excelMeta.repairer=document.getElementById('edit-op-repairer').value;
+  op.excelMeta.rate=parseFloat(document.getElementById('edit-op-rate').value)||500000;
+  op.excelMeta.result=document.getElementById('edit-op-result').value;
+  const ns=parseInt(document.getElementById('edit-op-station').value);
+  const nd=parseInt(document.getElementById('edit-op-device').value)||null;
+  if(ns!==op.stationId||nd!==op.deviceId){
+    op.stationId=ns;op.deviceId=nd;
+    const slot=getNextSlot(ns,nd,op.duration,op.startTime);
+    op.startTime=slot.start;op.endTime=slot.end;
+  }
+  closeModal();renderOpsTable();save();
+}
+
+// ===== GANTT =====
+function renderGantt(){
+  const c=document.getElementById('gantt-container');
+  const mode=document.getElementById('gantt-mode')?.value||'hour';
+  if(!operations.length){c.innerHTML='<div style="color:#4b5563;padding:16px;text-align:center">عملیاتی وجود ندارد</div>';return;}
+  const allD=operations.flatMap(o=>[new Date(o.startTime),new Date(o.endTime)]);
+  const minD=new Date(Math.min(...allD));minD.setHours(0,0,0,0);
+  const maxD=new Date(Math.max(...allD));maxD.setHours(23,0,0,0);
+  
+  let slots=[];
+  if(mode==='day'){
+    let d=new Date(minD);
+    while(d<=maxD){slots.push(new Date(d));d=new Date(d.getTime()+86400000);}
+  }else{
+    const totalH=Math.ceil((maxD-minD)/3600000)+1;
+    slots=Array.from({length:totalH},(_,h)=>new Date(minD.getTime()+h*3600000));
+  }
+  const cW=mode==='day'?50:32;
+  let html=`<table style="border-collapse:collapse;min-width:${slots.length*cW+160}px"><thead><tr>
+    <th class="gantt-row-label">ایستگاه / دستگاه</th>
+    ${slots.map(s=>`<th class="gantt-header-cell" style="min-width:${cW}px">${mode==='day'?s.toLocaleDateString('fa-IR',{month:'numeric',day:'numeric'}):s.getHours()}</th>`).join('')}
+  </tr></thead><tbody>`;
+  
+  stations.forEach(st=>{
+    const stOps=operations.filter(o=>o.stationId===st.id);if(!stOps.length)return;
+    const devIds=[...new Set(stOps.map(o=>o.deviceId))];
+    devIds.forEach(did=>{
+      const dev=getDev(st.id,did);
+      const devOps=stOps.filter(o=>o.deviceId===did);
+      html+=`<tr><td class="gantt-row-label">
+        <div><span style="width:8px;height:8px;border-radius:50%;background:${st.color};display:inline-block"></span> ${esc(st.name)}</div>
+        <div style="font-size:10px;color:#7c83d4">${dev?esc(dev.code):'—'}</div>
+      </td>`;
+      slots.forEach(sl=>{
+        const slEnd=new Date(sl.getTime()+(mode==='day'?86400000:3600000));
+        const op=devOps.find(o=>new Date(o.startTime)<slEnd&&new Date(o.endTime)>sl);
+        html+=op?`<td class="gantt-cell" style="background:${st.color}22"><div class="gantt-bar" style="background:${st.color}" title="${esc(op.name)}">${esc(op.name.substring(0,4))}</div></td>`:`<td class="gantt-cell"></td>`;
+      });
+      html+='</tr>';
+    });
+  });
+  html+='</tbody></table>';
+  c.innerHTML=html;
+}
+
+// ===== BPMN =====
+function renderBPMNSelect(){
+  const sel=document.getElementById('bpmn-project-select');
+  sel.innerHTML='<option value="">-- انتخاب کنید --</option>'+projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+}
+function renderBPMN(){
+  const pid=parseInt(document.getElementById('bpmn-project-select').value);
+  const canvas=document.getElementById('bpmn-canvas');
+  if(!pid){canvas.innerHTML='<div style="color:#4b5563;padding:26px;text-align:center">یک پروژه انتخاب کنید</div>';return;}
+  const ops=operations.filter(o=>o.projectId===pid).sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+  const proj=getPr(pid);
+  if(!ops.length){canvas.innerHTML='<div style="color:#4b5563;padding:26px;text-align:center">عملیاتی تعریف نشده</div>';return;}
+  const nW=155,nH=72,sX=55,y=158,stepX=195;
+  const W=Math.max(800,ops.length*stepX+280);
+  let nodes='',arrows='';
+  nodes+=`<circle cx="${sX}" cy="${y}" r="20" fill="#2e7d32" stroke="#4caf50" stroke-width="2"/>
+    <text x="${sX}" y="${y+5}" text-anchor="middle" fill="#fff" font-size="11">شروع</text>`;
+  let prevX=sX+20;
+  ops.forEach((op,i)=>{
+    const st=getSt(op.stationId),dev=getDev(op.stationId,op.deviceId);
+    const cx=sX+(i+1)*stepX,rx=cx-nW/2,ry=y-nH/2,col=st?.color||'#5c6bc0';
+    arrows+=`<line x1="${prevX+2}" y1="${y}" x2="${rx-2}" y2="${y}" stroke="#5c6bc0" stroke-width="2" marker-end="url(#arr)"/>`;
+    nodes+=`<rect x="${rx}" y="${ry}" width="${nW}" height="${nH}" rx="8" fill="${col}22" stroke="${col}" stroke-width="2"/>
+      <text x="${cx}" y="${y-18}" text-anchor="middle" fill="${col}" font-size="11" font-weight="bold">${esc(op.name.substring(0,16))}</text>
+      <text x="${cx}" y="${y-3}" text-anchor="middle" fill="#bbb" font-size="10">${st?esc(st.name):''}</text>
+      <text x="${cx}" y="${y+12}" text-anchor="middle" fill="#7c83d4" font-size="10">${dev?esc(dev.code):'—'}</text>
+      <text x="${cx}" y="${y+26}" text-anchor="middle" fill="#9ca3af" font-size="9">${op.duration}h |
+        <tspan fill="${op.status==='done'?'#86efac':op.status==='inprog'?'#60a5fa':'#9ca3af'}">${statL[op.status]}</tspan>
+        ${op.excelMeta?.result?`| <tspan fill="${op.excelMeta.result==='OK'?'#86efac':'#fca5a5'}">${op.excelMeta.result}</tspan>`:''}
+      </text>`;
+    prevX=cx+nW/2;
+  });
+  const eX=sX+(ops.length+1)*stepX;
+  arrows+=`<line x1="${prevX+2}" y1="${y}" x2="${eX-20}" y2="${y}" stroke="#5c6bc0" stroke-width="2" marker-end="url(#arr)"/>`;
+  nodes+=`<circle cx="${eX}" cy="${y}" r="20" fill="#c62828" stroke="#f44336" stroke-width="3"/>
+    <text x="${eX}" y="${y+5}" text-anchor="middle" fill="#fff" font-size="11">پایان</text>`;
+  nodes+=`<rect x="6" y="6" width="${Math.max(W-12,eX+45)}" height="${y*2-12}" rx="10" fill="none" stroke="#2d3561" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <text x="16" y="28" fill="#7c83d4" font-size="12" font-weight="bold">${esc(proj.name)}</text>
+    <text x="16" y="44" fill="#9ca3af" font-size="10">${esc(proj.type||'')} | ${esc(proj.customer||'')}</text>`;
+  canvas.innerHTML=`<svg viewBox="0 0 ${Math.max(W,eX+75)} ${y*2}" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-height:${y*2}px">
+    <defs><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#5c6bc0"/></marker></defs>
+    ${arrows}${nodes}</svg>`;
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  const tot=projects.length,sch=projects.filter(p=>p.scheduled).length;
+  const totO=operations.length,dn=operations.filter(o=>o.status==='done').length,inp=operations.filter(o=>o.status==='inprog').length;
+  const totDev=stations.reduce((s,st)=>s+st.devices.length,0);
+  document.getElementById('summary-boxes').innerHTML=`
+    <div class="summary-box"><div class="summary-num">${tot}</div><div class="summary-lbl">کل پروژه‌ها</div></div>
+    <div class="summary-box"><div class="summary-num" style="color:#4caf50">${sch}</div><div class="summary-lbl">برنامه‌ریزی‌شده</div></div>
+    <div class="summary-box"><div class="summary-num" style="color:#ff9800">${stations.length}</div><div class="summary-lbl">ایستگاه</div></div>
+    <div class="summary-box"><div class="summary-num" style="color:#7986cb">${totDev}</div><div class="summary-lbl">دستگاه</div></div>
+    <div class="summary-box"><div class="summary-num" style="color:#ff9800">${totO}</div><div class="summary-lbl">کل عملیات</div></div>
+    <div class="summary-box"><div class="summary-num" style="color:#2196f3">${inp}</div><div class="summary-lbl">در حال انجام</div></div>
+    <div class="summary-box"><div class="summary-num" style="color:#4caf50">${dn}</div><div class="summary-lbl">تکمیل‌شده</div></div>`;
+  const hi=operations.filter(o=>o.priority==='high'&&o.status!=='done').sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+  const pe=document.getElementById('priority-ops');
+  if(!hi.length){pe.innerHTML='<div style="color:#4b5563;font-size:12px">عملیات اولویت بالایی در انتظار وجود ندارد ✅</div>';return;}
+  pe.innerHTML=hi.map(op=>{
+    const p=getPr(op.projectId),st=getSt(op.stationId),dev=getDev(op.stationId,op.deviceId);
+    return `<div class="op-item">
+      <span style="flex:1;font-size:12px;font-weight:bold">${esc(op.name)}</span>
+      <span style="font-size:10px;color:#9ca3af">${p?esc(p.name):''} | ${st?esc(st.name):''} | ${dev?esc(dev.code):'-'}</span>
+      <span class="badge ${statC[op.status]}">${statL[op.status]}</span>
+    </div>`;
+  }).join('');
+}
+function renderCostSummary(){
+  let total=0,done=0;
+  operations.forEach(op=>{
+    const c=op.duration*(op.excelMeta?.rate||500000);
+    total+=c;if(op.status==='done')done+=c;
+  });
+  document.getElementById('cost-summary').innerHTML=`
+    <div class="summary-box"><div class="summary-num" style="color:#4caf50;font-size:18px">${total.toLocaleString()}</div><div class="summary-lbl">کل هزینه (تومان)</div></div>
+    <div class="summary-box"><div class="summary-num" style="color:#2196f3;font-size:18px">${done.toLocaleString()}</div><div class="summary-lbl">هزینه تکمیل‌شده</div></div>
+    <div class="summary-box"><div class="summary-num" style="color:#ff9800;font-size:18px">${(total-done).toLocaleString()}</div><div class="summary-lbl">هزینه باقی‌مانده</div></div>`;
+}
+
+// ===== DATA =====
+function exportData(){
+  const blob=new Blob([JSON.stringify({stations,projects,operations,sidC,pidC,oidC,didC,kw:EXCEL_KW,exportDate:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='mold_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(!confirm('داده‌های فعلی جایگزین شوند؟'))return;
+      stations=d.stations||[];projects=d.projects||[];operations=d.operations||[];
+      sidC=d.sidC||1;pidC=d.pidC||1;oidC=d.oidC||1;didC=d.didC||1;
+      if(d.kw)Object.assign(EXCEL_KW,d.kw);
+      save();renderAll();alert('✅ بارگذاری موفق');
+    }catch(err){alert('❌ خطا: '+err.message);}
+  };r.readAsText(f);e.target.value='';
+}
+function clearAllData(){
+  if(!confirm('همه داده‌ها پاک شوند؟'))return;
+  stations=[];projects=[];operations=[];sidC=1;pidC=1;oidC=1;didC=1;
+  Object.keys(EXCEL_KW).forEach(k=>delete EXCEL_KW[k]);
+  localStorage.removeItem(SK);renderAll();
+}
+function renderAll(){
+  renderStations();populateStSelects();
+  renderProjects();renderDragProjects();
+  renderOpsTable();renderDashboard();renderCostSummary();
+}
+
+// ===== INIT =====
+const loaded=load();
+if(!loaded){
+  stations=[
+    {id:1,name:'فرزکاری',code:'FRZ',color:'#5c6bc0',devices:[{id:1,code:'FRZ-001',name:'فرز ماکینو',capacity:8},{id:2,code:'FRZ-002',name:'فرز DMG',capacity:8},{id:3,code:'CNC-7202',name:'CNC 7202',capacity:8},{id:4,code:'CNC-7203',name:'CNC 7203',capacity:8}]},
+    {id:2,name:'تراشکاری',code:'TRN',color:'#e91e63',devices:[{id:5,code:'TRN-001',name:'تراش فاندک',capacity:8},{id:6,code:'TRN-7301',name:'تراش 7301',capacity:8},{id:7,code:'TRN-7302',name:'تراش 7302',capacity:8},{id:8,code:'TRN-7303',name:'تراش 7303',capacity:8}]},
+    {id:3,name:'EDM اسپارک',code:'EDM',color:'#ff9800',devices:[{id:9,code:'EDM-001',name:'اسپارک میتسوبیشی',capacity:8},{id:10,code:'EDM-002',name:'اسپارک اژاکس',capacity:8}]},
+    {id:4,name:'سنگ‌زنی',code:'GRN',color:'#009688',devices:[{id:11,code:'GRN-001',name:'سنگ سطح',capacity:8},{id:12,code:'GRN-7502',name:'سنگ 7502',capacity:8}]},
+    {id:5,name:'وایرکات',code:'WC',color:'#9c27b0',devices:[{id:13,code:'WC-001',name:'وایر فانوک',capacity:8},{id:14,code:'WC-7601',name:'وایر 7601',capacity:8},{id:15,code:'WC-7602',name:'وایر 7602',capacity:8},{id:16,code:'WC-7603',name:'وایر 7603',capacity:8},{id:17,code:'WC-7605',name:'وایر 7605',capacity:8}]},
+    {id:6,name:'مونتاژ',code:'MNT',color:'#4caf50',devices:[{id:18,code:'MNT-001',name:'مونتاژ',capacity:8}]},
+    {id:7,name:'دریل',code:'DRL',color:'#ff5722',devices:[{id:19,code:'DRL-7401',name:'دریل رادیال',capacity:8},{id:20,code:'DRL-7701',name:'سوپر دریل',capacity:8}]},
+    {id:8,name:'برش',code:'CUT',color:'#795548',devices:[{id:21,code:'CUT-8002',name:'سری تراش',capacity:8},{id:22,code:'CUT-8009',name:'اره لنگ',capacity:8}]}
+  ];
+  EXCEL_KW[1]=['فرز','CNC','فرزکاری'];
+  EXCEL_KW[2]=['تراش','تراشکاری'];
+  EXCEL_KW[4]=['سنگ','سنگ زنی','سنگ‌زنی'];
+  EXCEL_KW[5]=['وایر','وایرکات'];
+  EXCEL_KW[6]=['مونتاژ','دمونتاژ','بستن','باز کردن','قلاویز'];
+  EXCEL_KW[7]=['دریل','سوپر دریل'];
+  EXCEL_KW[8]=['اره لنگ','سری تراش','برش'];
+  sidC=9;didC=23;
+}
+renderAll();
+</script>
+</body>
+</html>
